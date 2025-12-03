@@ -1,7 +1,7 @@
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ORMmodels.models import LeagueModel, TeamModel
+from app.ORMmodels.models import LeagueModel
 from app.repositories.team_repo import TeamRepository
 from app.repositories.match_repo import MatchRepository
 from app.scraper.fetcher import AsyncFetcher
@@ -17,7 +17,6 @@ class TeamService:
         self.repo = TeamRepository(session)
         self.match_repo = MatchRepository(session)
 
-        # Ленивая инициализация для скрейпера (чтобы не создавать их при чтении API)
         self._fetcher: Optional[AsyncFetcher] = None
         self._parser: Optional[StatsParser] = None
 
@@ -34,46 +33,31 @@ class TeamService:
         return self._parser
 
     async def update_teams(self, leagues: List[LeagueModel], season_url_override: Dict[int, str] = None):
-        """
-        season_url_override: Словарь {league_id: 'URL_СЕЗОНА'}.
-        Если передан, парсим команды конкретного сезона, а не текущего.
-        """
-        print(f"🚀 [TeamService] Получено {len(leagues)} лиг для обработки.")
         total_teams_saved = 0
         season_url_override = season_url_override or {}
 
         for i, league in enumerate(leagues, 1):
             if not league.fbref_id or not league.slug: continue
 
-            # Если есть URL конкретного сезона (из истории), берем его. Иначе - текущий.
             if league.id in season_url_override:
                 url = season_url_override[league.id]
             else:
                 url = f"https://fbref.com/en/comps/{league.fbref_id}/{league.slug}"
 
-            print(f"\n[{i}/{len(leagues)}] 🌍 Лига: {league.title}")
-            print(f"   🔗 URL: {url}")
-
             try:
                 html = await self.fetcher.get_html(url)
                 teams_data = self.parser.parse_teams(html)
-                print(f"   🔎 Найдено команд: {len(teams_data)}")
 
                 if teams_data:
                     count = await self.repo.upsert_teams(teams_data)
                     await self.session.commit()
                     total_teams_saved += count
-                    print(f"   💾 Сохранено: {count}")
-                else:
-                    print("   ⚠️ Команды не найдены")
 
             except Exception as e:
-                print(f"   ❌ Ошибка: {e}")
                 await self.session.rollback()
                 continue
 
         await self._fetcher.close()
-        print(f"\n🏁 [TeamService] Итог: {total_teams_saved} команд.")
 
     async def get_teams(self, pagination: PaginationShm):
         return await self.repo.get_all(pagination.limit, offset=pagination.offset)

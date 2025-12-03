@@ -27,7 +27,6 @@ class TeamRepository:
         )
 
         await self.session.execute(upsert_stmt)
-        # Commit делается в сервисе
         return len(teams_data)
 
     async def get_all(self, limit: int = 1000, offset: int = 0) -> List[TeamModel]:
@@ -40,12 +39,7 @@ class TeamRepository:
         result = await self.session.execute(stmt)
         return {row.fbref_id: row.id for row in result.all() if row.fbref_id}
 
-    # --- НОВЫЙ МЕТОД ---
     async def get_team_with_players(self, team: RequestTeamScheme) -> Optional[TeamModel]:
-        """
-        Возвращает команду и список уникальных игроков, которые за неё играли, по названию команды.
-        """
-        # 1. Получаем команду по названию
         stmt_team = select(TeamModel).where(TeamModel.title == team.title)
         result_team = await self.session.execute(stmt_team)
         result = result_team.scalar_one_or_none()
@@ -53,18 +47,16 @@ class TeamRepository:
         if not result:
             return None
 
-        # 2. Получаем игроков этой команды (через статистику)
-        # Ищем всех игроков, у которых есть запись в player_match_stats с этим team_id
+
         stmt_players = (
             select(PlayerModel)
             .join(PlayerMatchStatModel, PlayerModel.id == PlayerMatchStatModel.player_id)
             .where(PlayerMatchStatModel.team_id == result.id)
-            .distinct()  # Убираем дубликаты (игрок играл в 10 матчах -> покажем 1 раз)
+            .distinct()
         )
 
         result_players = await self.session.execute(stmt_players)
         players = result_players.scalars().all()
 
-        # Прикрепляем игроков к объекту команды, чтобы Pydantic (from_attributes=True) мог их подхватить
         result.players = players
         return result

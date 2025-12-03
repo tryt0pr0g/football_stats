@@ -6,15 +6,9 @@ import re
 
 class StatsParser:
     def parse_league_history(self, html: str) -> List[Dict[str, Any]]:
-        """
-        Парсит страницу истории (History).
-        Возвращает список сезонов: [{'season': '2022-2023', 'url': '...'}, ...]
-        """
-        # Чистим от комментариев
         html = html.replace('<!--', '').replace('-->', '')
         soup = BeautifulSoup(html, 'lxml')
 
-        # Обычно таблица называется "seasons"
         table = soup.select_one('table.stats_table')
         if not table: return []
 
@@ -22,7 +16,6 @@ class StatsParser:
         rows = table.find('tbody').find_all('tr')
 
         for row in rows:
-            # Год/Сезон обычно в th с data-stat="season" или "year_id"
             season_header = row.find('th', {'data-stat': 'year_id'}) or row.find('th', {'data-stat': 'season'})
 
             if not season_header: continue
@@ -30,9 +23,8 @@ class StatsParser:
             link = season_header.find('a')
             if not link: continue
 
-            season_name = link.get_text().strip()  # "2023-2024"
+            season_name = link.get_text().strip()
             href = link['href']
-            # Ссылка: /en/comps/9/2023-2024/2023-2024-Premier-League-Stats
 
             full_url = f"https://fbref.com{href}"
 
@@ -44,7 +36,6 @@ class StatsParser:
         return seasons_data
 
     def parse_leagues(self, html: str) -> List[Dict[str, Any]]:
-        # Удаляем комментарии, чтобы видеть скрытые таблицы
         html = html.replace('<!--', '').replace('-->', '')
         soup = BeautifulSoup(html, 'lxml')
 
@@ -63,13 +54,11 @@ class StatsParser:
 
                 league_name = league_header.get_text().strip()
 
-                # Ищем ссылку
                 all_links = row.find_all('a')
                 target_href = None
                 for link in all_links:
                     href = link['href']
                     parts = href.split('/')
-                    # /en/comps/9/Premier-League-Stats
                     if len(parts) == 5 and parts[3].isdigit():
                         target_href = href
                         break
@@ -126,9 +115,6 @@ class StatsParser:
                 if fbref_id in unique_ids: continue
                 unique_ids.add(fbref_id)
 
-                # --- ПОПЫТКА НАЙТИ ЛОГОТИП ---
-                # Ищем тег img внутри ячейки команды или предыдущей ячейки (иногда там флаг)
-                # На FBREF логотипов в таблице standings обычно нет, но если появятся - мы их возьмем.
                 logo_url = None
                 img_tag = team_cell.find('img')
                 if img_tag:
@@ -214,9 +200,7 @@ class StatsParser:
         return matches
 
     def parse_match_details(self, html: str, match_id: int, home_team_fbref: str, away_team_fbref: str) -> dict:
-        # --- ВАЖНЕЙШАЯ СТРОКА: ДЕЛАЕМ СКРЫТЫЕ ДАННЫЕ ВИДИМЫМИ ---
         html = html.replace('<!--', '').replace('-->', '')
-        # --------------------------------------------------------
 
         soup = BeautifulSoup(html, 'lxml')
 
@@ -231,7 +215,6 @@ class StatsParser:
             table = soup.find('table', id=table_id)
 
             if not table:
-                print(f"   ⚠️ Таблица {table_id} не найдена")
                 continue
 
             rows = table.find('tbody').find_all('tr')

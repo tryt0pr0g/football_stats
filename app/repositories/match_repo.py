@@ -52,12 +52,7 @@ class MatchRepository:
         )
         await self.session.execute(stmt)
 
-    # --- НОВЫЙ МЕТОД ---
     async def get_finished_matches_by_team(self, team_id: int, limit: int, offset: int) -> List[MatchModel]:
-        """
-        Возвращает сыгранные матчи команды (дома или в гостях) с пагинацией.
-        Сортировка от новых к старым.
-        """
         stmt = (
             select(MatchModel)
             .options(selectinload(MatchModel.home_team),

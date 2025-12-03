@@ -15,9 +15,8 @@ class PaginationShm(BaseModel):
 
 
 class ResponseTeamScheme(BaseModel):
-    id: int  # Желательно возвращать ID
+    id: int
     title: str
-    # ИСПРАВЛЕНО: logo -> logo_url (как в TeamModel)
     logo_url: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -9,14 +9,10 @@ DATABASE_URL = os.getenv(
 )
 
 if DATABASE_URL.startswith("postgresql://") and "+asyncpg" not in DATABASE_URL:
-    # Заменяем префикс для явного указания asyncpg драйвера
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
 elif DATABASE_URL.startswith("postgres://") and "+asyncpg" not in DATABASE_URL:
-    # Обработка короткого префикса 'postgres://'
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
 
-
-# Создание асинхронного движка
 engine = create_async_engine(
     DATABASE_URL,
     echo=False, # Установите True для отладки SQL-запросов
@@ -24,12 +20,10 @@ engine = create_async_engine(
     max_overflow=0
 )
 
-# Фабрика для создания асинхронных сессий
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
     expire_on_commit=False,
     class_=AsyncSession,
 )
 
-# Базовый класс для всех декларативных моделей ORM
 Base = declarative_base()
