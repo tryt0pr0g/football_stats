@@ -13,6 +13,13 @@ if DATABASE_URL.startswith("postgresql://") and "+asyncpg" not in DATABASE_URL:
 elif DATABASE_URL.startswith("postgres://") and "+asyncpg" not in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
 
+if 'ssl' not in DATABASE_URL:
+    # Добавляем ?ssl=require, если параметры еще не указаны
+    if '?' in DATABASE_URL:
+        DATABASE_URL += '&ssl=require'
+    else:
+        DATABASE_URL += '?ssl=require'
+
 engine = create_async_engine(
     DATABASE_URL,
     echo=False, # Установите True для отладки SQL-запросов
