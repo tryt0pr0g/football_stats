@@ -17,6 +17,7 @@ class LeagueModel(Base):
     title: Mapped[str] = mapped_column(String(100))
     country: Mapped[str] = mapped_column(String(100))
     slug: Mapped[str] = mapped_column(String(100), unique=True)
+    fbref_id: Mapped[str | None] = mapped_column(String(50), unique=False, nullable=True)
 
     matches: Mapped[List['MatchModel']] = relationship(back_populates='league')
 
@@ -29,7 +30,6 @@ class TeamModel(Base):
     fbref_id: Mapped[fbref_id_type]
     logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
-    # Метаданные обновления
     last_updated: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -69,7 +69,11 @@ class MatchModel(Base):
     is_finished: Mapped[bool] = mapped_column(server_default=text('false'))
     details_parsed: Mapped[bool] = mapped_column(server_default=text('false'))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        onupdate=func.now(),
+        server_default=func.now()
+    )
 
     league: Mapped['LeagueModel'] = relationship(back_populates='matches')
     home_team: Mapped['TeamModel'] = relationship(foreign_keys=[home_team_id])
