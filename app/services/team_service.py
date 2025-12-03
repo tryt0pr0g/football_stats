@@ -8,6 +8,7 @@ from app.scraper.fetcher import AsyncFetcher
 from app.scraper.parser import StatsParser
 from app.schemes.team_shemes import PaginationShm, RequestTeamScheme
 from app.schemes.match_schemes import ResponseMatchScheme
+from typing import Dict
 
 
 class TeamService:
