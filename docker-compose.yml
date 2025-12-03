@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------------------
+  # SERVICE: DB (База данных PostgreSQL)
+  # ----------------------------------------------------
+  db:
+    # Используем официальный образ PostgreSQL
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      # Учетные данные для подключения из приложения
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: football_stats_db
+    ports:
+      # Открываем порт 5432 на хосте, чтобы можно было подключиться к БД
+      - "5432:5432"
+    volumes:
+      # Сохраняем данные БД на хосте, чтобы они не терялись при перезапуске
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # Проверка готовности БД
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------
+  # SERVICE: APP (Ваше FastAPI приложение)
+  # ----------------------------------------------------
+  app:
+    # Собираем образ из текущей директории
+    build: .
+    restart: always
+    ports:
+      # Открываем порт 8000 для доступа к API
+      - "8000:8000"
+    environment:
+      # Строка подключения к БД, используя имя сервиса 'db'
+      DATABASE_URL: postgresql+asyncpg://user:password@db/football_stats_db
+      # Добавьте другие переменные окружения, если они используются
+    depends_on:
+      # Запускаем приложение только после того, как БД будет готова
+      db:
+        condition: service_healthy
+    # Команда запуска Uvicorn
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+
+volumes:
+  # Объем для постоянного хранения данных PostgreSQL
+  postgres_data:
