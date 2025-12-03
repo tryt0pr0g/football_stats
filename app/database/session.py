@@ -7,6 +7,9 @@ from typing import Annotated
 
 async def get_session():
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+        finally:
+            await session.close()
 
 Session = Annotated[AsyncSessionLocal, Depends(get_session)]
