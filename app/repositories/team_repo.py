@@ -42,21 +42,22 @@ class TeamRepository:
     async def get_team_with_players(self, team: RequestTeamScheme) -> Optional[TeamModel]:
         stmt_team = select(TeamModel).where(TeamModel.title == team.title)
         result_team = await self.session.execute(stmt_team)
-        result = result_team.scalar_one_or_none()
+        team_obj = result_team.scalar_one_or_none()
 
-        if not result:
+        if not team_obj:
+            print("Команда не найдена в БД.")
             return None
-
 
         stmt_players = (
             select(PlayerModel)
             .join(PlayerMatchStatModel, PlayerModel.id == PlayerMatchStatModel.player_id)
-            .where(PlayerMatchStatModel.team_id == result.id)
+            .where(PlayerMatchStatModel.team_id == team_obj.id)
             .distinct()
         )
 
         result_players = await self.session.execute(stmt_players)
         players = result_players.scalars().all()
 
-        result.players = players
-        return result
+        team_obj.players = players
+
+        return team_obj

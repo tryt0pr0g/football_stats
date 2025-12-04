@@ -23,7 +23,6 @@ class MatchService:
         await self.fetcher.close()
 
     async def update_matches(self, leagues: List[LeagueModel], season_config: Dict[int, dict] = None):
-
         team_map = await self.team_repo.get_fbref_id_map()
         total_matches = 0
         season_config = season_config or {}
@@ -41,11 +40,9 @@ class MatchService:
                 else:
                     url = base_url
             else:
-                # Текущий сезон
                 current_season = "2024-2025"
                 slug_schedule = league.slug.replace("-Stats", "-Scores-and-Fixtures")
                 url = f"https://fbref.com/en/comps/{league.fbref_id}/schedule/{slug_schedule}"
-
 
             try:
                 html = await self.fetcher.get_html(url)
@@ -72,6 +69,7 @@ class MatchService:
                     total_matches += count
 
             except Exception as e:
+                print(f"Error updating matches: {e}")
                 await self.session.rollback()
                 continue
 
@@ -124,14 +122,20 @@ class MatchService:
 
                             s['player_id'] = pid
                             s['team_id'] = tid
+
                             del s['player_fbref_id_temp']
                             del s['team_fbref_id_temp']
                             ready_stats.append(s)
 
+                    if ready_stats:
+                        await self.stat_repo.upsert_stats(ready_stats)
+
                     await self.repo.mark_as_parsed(match['id'])
 
                     await self.session.commit()
+                    print(f"Match {match['fbref_id']} parsed successfully. Stats saved: {len(ready_stats)}")
 
             except Exception as e:
+                print(f"Error parsing match details {match['fbref_id']}: {e}")
                 await self.session.rollback()  # Откатываем этот матч
                 continue
