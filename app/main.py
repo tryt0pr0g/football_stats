@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -15,38 +16,67 @@ logger = logging.getLogger(__name__)
 
 scheduler = AsyncIOScheduler()
 
+
 async def run_scheduled_parsing():
-    async with AsyncSessionLocal() as session:
-        orchestrator = OrchestratorService(session)
-        await orchestrator.run_full_update()
+    logger.info("Запуск запланированной задачи парсинга...")
+    try:
+        async with AsyncSessionLocal() as session:
+            orchestrator = OrchestratorService(session)
+            await orchestrator.run_full_update()
+    except Exception as e:
+        logger.error(f"Ошибка в процессе парсинга: {e}")
+
 
 async def run_startup_check():
-    async with AsyncSessionLocal() as session:
-        repo = LeagueRepository(session)
-        leagues = await repo.get_all()
+    if os.getenv("SCRAPING_ENABLED", "True").lower() == "false":
+        logger.info("Парсинг отключен в конфигурации (SCRAPING_ENABLED=False). Пропускаем проверку.")
+        return
+
+    logger.info("Проверка состояния базы данных...")
+    try:
+        async with AsyncSessionLocal() as session:
+            repo = LeagueRepository(session)
+            leagues = await repo.get_all()
 
         if not leagues:
+            logger.info("БД пуста. Запускаем ПЕРВИЧНУЮ загрузку данных...")
             asyncio.create_task(run_scheduled_parsing())
+        else:
+            logger.info(f"В БД уже есть данные ({len(leagues)} лиг).")
+    except Exception as e:
+        logger.error(f"Ошибка подключения к БД: {e}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await run_startup_check()
-    scheduler.add_job(
-        run_scheduled_parsing,
-        trigger=CronTrigger(hour=3, minute=0),  # Время сервера (обычно UTC)
-        id="daily_update",
-        replace_existing=True
-    )
+    logger.info("🟢 Приложение запускается...")
 
-    scheduler.start()
+    await run_startup_check()
+
+    if os.getenv("SCRAPING_ENABLED", "True").lower() != "false":
+        scheduler.add_job(
+            run_scheduled_parsing,
+            trigger=CronTrigger(hour=3, minute=0),
+            id="daily_update",
+            replace_existing=True
+        )
+        scheduler.start()
+        logger.info("Планировщик запущен.")
+    else:
+        logger.info("Планировщик НЕ запущен (Режим только API).")
 
     yield
 
-    logger.info("🔴 Приложение останавливается...")
-    scheduler.shutdown()
+    logger.info("Приложение останавливается...")
+    if scheduler.running:
+        scheduler.shutdown()
 
 
 app = FastAPI(title="Football Stats API", lifespan=lifespan)
 
 app.include_router(main_router, prefix="/api")
+
+
+@app.get("/")
+async def root():
+    return {"message": "Football Data Service is Running", "status": "active"}

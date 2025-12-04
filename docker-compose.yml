@@ -1,22 +1,17 @@
 version: '3.8'
 
 services:
-  # Наш API сервис
   app:
     build: .
     restart: always
     ports:
       - "8000:8000"
     environment:
-      # Внутренний URL, который будет использоваться в контейнере
       DATABASE_URL: postgresql+asyncpg://postgres:toor@db/football_stats
     depends_on:
-      # Ждем, пока сервис БД будет готов
       db:
         condition: service_healthy
-    # CMD не нужен, так как ENTRYPOINT запускает Uvicorn
 
-  # Наша локальная БД
   db:
     image: postgres:15-alpine
     restart: always
