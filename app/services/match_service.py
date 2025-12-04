@@ -40,6 +40,7 @@ class MatchService:
                 else:
                     url = base_url
             else:
+                # Текущий сезон
                 current_season = "2024-2025"
                 slug_schedule = league.slug.replace("-Stats", "-Scores-and-Fixtures")
                 url = f"https://fbref.com/en/comps/{league.fbref_id}/schedule/{slug_schedule}"
@@ -72,8 +73,6 @@ class MatchService:
                 print(f"Error updating matches: {e}")
                 await self.session.rollback()
                 continue
-
-        await self.fetcher.close()
 
     async def update_details_for_finished_matches(self):
         matches_orm = await self.repo.get_unparsed_matches(limit=5)
@@ -133,9 +132,7 @@ class MatchService:
                     await self.repo.mark_as_parsed(match['id'])
 
                     await self.session.commit()
-                    print(f"Match {match['fbref_id']} parsed successfully. Stats saved: {len(ready_stats)}")
 
             except Exception as e:
-                print(f"Error parsing match details {match['fbref_id']}: {e}")
-                await self.session.rollback()  # Откатываем этот матч
+                await self.session.rollback()
                 continue
