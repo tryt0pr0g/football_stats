@@ -152,7 +152,6 @@ class StatsParser:
             report_cell = row.find('td', {'data-stat': 'match_report'})
             match_report_link = report_cell.find('a') if report_cell else None
 
-            fbref_match_id = None
             if match_report_link:
                 fbref_match_id = match_report_link['href'].split('/')[3]
             else:
@@ -272,7 +271,6 @@ class StatsParser:
 
         return {"players": players_to_create, "stats": stats_to_create}
 
-    # --- Helpers ---
     def _get_cell(self, row: Tag, stat_name: str) -> Optional[Tag]:
         return row.find(['td', 'th'], {'data-stat': stat_name})
 

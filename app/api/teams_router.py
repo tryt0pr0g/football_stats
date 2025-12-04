@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 
 from app.schemes.team_shemes import PaginationShm, ResponseTeamScheme, RequestTeamScheme, ResponseTeamInfoScheme
-from app.schemes.match_schemes import ResponseMatchScheme  # <--- Импорт
+from app.schemes.match_schemes import ResponseMatchScheme
 from app.database.session import Session
 from app.services.team_service import TeamService
 

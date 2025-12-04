@@ -2,8 +2,8 @@ from app.database.db import Base
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 from sqlalchemy import String, DateTime, func, Date, ForeignKey, UniqueConstraint, text, BigInteger, Float
 from sqlalchemy.dialects.postgresql import JSONB
-from typing import Annotated, List, Any, Dict, Optional
-from datetime import datetime, UTC, date
+from typing import Annotated, List, Any, Dict
+from datetime import datetime, date
 
 
 intPK = Annotated[int, mapped_column(primary_key=True, autoincrement=True)]

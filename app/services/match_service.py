@@ -42,8 +42,6 @@ class MatchService:
                 slug_schedule = league.slug.replace("-Stats", "-Scores-and-Fixtures")
                 url = f"https://fbref.com/en/comps/{league.fbref_id}/schedule/{slug_schedule}"
 
-            print(f"   [Schedule] Parsing {league.title} ({current_season})...")
-
             try:
                 html = await self.fetcher.get_html(url)
 
@@ -111,7 +109,6 @@ class MatchService:
                 stats_data = result['stats']
 
                 if stats_data:
-                    # 1. Игроки
                     fbref_to_db_map = await self.stat_repo.upsert_players(players_data)
 
                     ready_stats = []
@@ -123,7 +120,6 @@ class MatchService:
                             s['player_id'] = pid
                             s['team_id'] = tid
 
-                            # Чистка временных полей
                             s.pop('player_fbref_id_temp', None)
                             s.pop('team_fbref_id_temp', None)
                             ready_stats.append(s)

@@ -45,7 +45,6 @@ class TeamRepository:
         team_obj = result_team.scalar_one_or_none()
 
         if not team_obj:
-            print("Команда не найдена в БД.")
             return None
 
         stmt_players = (
